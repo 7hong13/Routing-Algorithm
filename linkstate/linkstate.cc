@@ -13,7 +13,6 @@ vector<pii> graph[MAX_NODE_SIZE + 1]; //destination, cost
 priority_queue<pii, vector<pii>, greater<pii> > pq; //cost, destination
 int dist[MAX_NODE_SIZE + 1][MAX_NODE_SIZE + 1];
 int nearest[MAX_NODE_SIZE + 1][MAX_NODE_SIZE + 1];
-stack<int> path[MAX_NODE_SIZE + 1];
 int nodeNum;
 
 void exitArgsErr() {
@@ -26,7 +25,7 @@ void exitInputErr() {
     exit(1);
 }
 
-void dijkstra() {
+void dijkstra(FILE *write_fp) {
     fill(&dist[0][0], &dist[MAX_NODE_SIZE][MAX_NODE_SIZE + 1], INF);
     for (int u = 0; u < nodeNum; u++) {
         for (int v = 0; v < nodeNum; v++) {
@@ -51,10 +50,41 @@ void dijkstra() {
                 if (nearest[u][node] == u) break;
                 node = nearest[u][node];
             }
-            printf("%d %d %d\n", v, node, dist[u][v]);
+            fprintf(write_fp, "%d %d %d\n", v, node, dist[u][v]);
         }
-        printf("\n");
+        fprintf(write_fp, "\n");
     }
+}
+
+void deliverMessages(FILE *read_fp, FILE *write_fp) {
+    if (read_fp == NULL) {
+        exitInputErr();
+    }
+    int node, dest;
+    char message[MAX_MESSAGE_SIZE + 1];
+    fscanf(read_fp, "%d %d %[^\n]s", &node, &dest, message);
+    while (!feof(read_fp)) {
+        if (dist[node][dest] == INF) {
+            fprintf(write_fp, "from %d to %d cost infinite hops unreachable message %s\n", node, dest, message);
+            continue;
+        }
+        fprintf(write_fp, "from %d to %d cost %d hops ", node, dest, dist[node][dest]);
+        int curr = nearest[node][dest];
+        stack<int> path;
+        path.push(curr);
+        while (true) {
+            curr = nearest[node][curr];
+            path.push(curr);
+            if (curr == node) break;
+        }
+        while (!path.empty()) {
+            fprintf(write_fp, "%d ", path.top());
+            path.pop();
+        }
+        fprintf(write_fp, "message %s\n", message);
+        fscanf(read_fp, "%d %d %[^\n]s", &node, &dest, message);
+    }
+    fprintf(write_fp, "\n");
 }
 
 int main(int argc, char* argv[]) {
@@ -78,7 +108,11 @@ int main(int argc, char* argv[]) {
         graph[u].push_back(pii(v, w));
     }
 
-    dijkstra();
+    write_fp = fopen("output_ls.txt", "w");   
+    dijkstra(write_fp);
+
+    read_fp = fopen(argv[2], "r");
+    deliverMessages(read_fp, write_fp);
 
     printf("Complete. Output file written to output_ls.txt.");
     return 0;
