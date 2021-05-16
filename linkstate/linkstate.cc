@@ -27,7 +27,9 @@ void exitInputErr() {
 
 void dijkstra(FILE *write_fp) {
     fill(&dist[0][0], &dist[MAX_NODE_SIZE][MAX_NODE_SIZE + 1], INF);
+    fill(&nearest[0][0], &nearest[MAX_NODE_SIZE][MAX_NODE_SIZE + 1], INF);
     for (int u = 0; u < nodeNum; u++) {
+        sort(graph[u].begin(), graph[u].end());
         for (int v = 0; v < nodeNum; v++) {
             dist[u][u] = 0;
             nearest[u][u] = u;
@@ -36,7 +38,7 @@ void dijkstra(FILE *write_fp) {
                 int minCost = pq.top().first;
                 int x = pq.top().second;
                 pq.pop();
-                for (int idx = 0; idx < graph[x].size(); idx++) {
+                for (size_t idx = 0; idx < graph[x].size(); idx++) {
                     pii y = graph[x][idx];
                     if (dist[u][y.first] < minCost) continue;
                     if (dist[u][y.first] <= dist[u][x] + y.second) continue;
@@ -45,6 +47,7 @@ void dijkstra(FILE *write_fp) {
                     nearest[u][y.first] = x;
                 }
             }
+            if (dist[u][v] == INF) continue;
             int node = v;
             while (true) {
                 if (nearest[u][node] == u) break;
@@ -66,22 +69,23 @@ void deliverMessages(FILE *read_fp, FILE *write_fp) {
     while (!feof(read_fp)) {
         if (dist[node][dest] == INF) {
             fprintf(write_fp, "from %d to %d cost infinite hops unreachable message %s\n", node, dest, message);
-            continue;
         }
-        fprintf(write_fp, "from %d to %d cost %d hops ", node, dest, dist[node][dest]);
-        int curr = nearest[node][dest];
-        stack<int> path;
-        path.push(curr);
-        while (true) {
-            curr = nearest[node][curr];
+        else {
+            fprintf(write_fp, "from %d to %d cost %d hops ", node, dest, dist[node][dest]);
+            int curr = nearest[node][dest];
+            stack<int> path;
             path.push(curr);
-            if (curr == node) break;
+            while (true) {
+                curr = nearest[node][curr];
+                path.push(curr);
+                if (curr == node) break;
+            }
+            while (!path.empty()) {
+                fprintf(write_fp, "%d ", path.top());
+                path.pop();
+            }
+            fprintf(write_fp, "message %s\n", message);
         }
-        while (!path.empty()) {
-            fprintf(write_fp, "%d ", path.top());
-            path.pop();
-        }
-        fprintf(write_fp, "message %s\n", message);
         fscanf(read_fp, "%d %d %[^\n]s", &node, &dest, message);
     }
     fprintf(write_fp, "\n");
@@ -101,7 +105,7 @@ int main(int argc, char* argv[]) {
 
     fscanf(read_fp, "%d", &nodeNum);
     //네트워크 구성
-    for (int idx = 0; idx < nodeNum; idx++) {
+    while (!feof(read_fp)) {
         int v, u, w;
         fscanf(read_fp, "%d %d %d", &v, &u, &w);
         graph[v].push_back(pii(u, w));
@@ -113,6 +117,30 @@ int main(int argc, char* argv[]) {
 
     read_fp = fopen(argv[2], "r");
     deliverMessages(read_fp, write_fp);
+
+    read_fp2 = fopen(argv[3], "r");
+    if (read_fp2 == NULL) {
+        exitInputErr();
+    }
+
+    int u, v, cost;
+    fscanf(read_fp2, "%d %d %d", &u, &v, &cost);
+    while (!feof(read_fp2)) {
+        graph[u].erase(remove(graph[u].begin(), graph[u].end(), pii(v, dist[u][v])), graph[u].end());
+        graph[v].erase(remove(graph[v].begin(), graph[v].end(), pii(u, dist[v][u])), graph[v].end());
+
+        if (cost != -999) {
+            graph[u].push_back(pii(v, cost));
+            graph[v].push_back(pii(u, cost));
+        }
+
+        dijkstra(write_fp);
+
+        read_fp = fopen(argv[2], "r");
+        deliverMessages(read_fp, write_fp);
+
+        fscanf(read_fp2, "%d %d %d", &u, &v, &cost);
+    }
 
     printf("Complete. Output file written to output_ls.txt.");
     return 0;
