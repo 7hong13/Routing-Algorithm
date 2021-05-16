@@ -3,6 +3,7 @@
 #include <vector>
 #include <string.h>
 #define MAX_NODE_SIZE 100
+#define MAX_MESSAGE_SIZE 1000
 using namespace std;
 typedef pair<int, int> pii;
 struct node {
@@ -59,24 +60,55 @@ void updateRoutingTables() {
     }
 }
 
+void writeTableOutput(FILE *fp) {
+    for (int idx = 0; idx < nodeNum; idx++) {
+        for (int v = 0; v < nodeNum; v++) {
+            if (tables[idx].next[v] < 0) continue;
+            fprintf(fp, "%d %d %d\n", v, tables[idx].next[v], tables[idx].cost[v]);
+        }
+        fprintf(fp, "\n");
+    }
+}
+
+void deliverMessages(FILE *read_fp, FILE *write_fp) {
+    int node, dest;
+    char message[MAX_MESSAGE_SIZE + 1];
+    fscanf(read_fp, "%d %d %[^\n]s", &node, &dest, message);
+    while (!feof(read_fp)) {
+        if (tables[node].next[dest] < 0) {
+            fprintf(write_fp, "from %d to %d cost infinite hops unreachable message %s\n", node, dest, message);
+            continue;
+        }
+        fprintf(write_fp, "from %d to %d cost %d hops ", node, dest, tables[node].cost[dest]);
+        int curr = node;
+        while (curr != dest) {
+            fprintf(write_fp, "%d ", curr);
+            curr = tables[curr].next[dest];
+        }
+        fprintf(write_fp, "message %s\n", message);
+        fscanf(read_fp, "%d %d %[^\n]s", &node, &dest, message);
+    }
+    fprintf(write_fp, "\n");
+}
+
 int main(int argc, char* argv[]) {
     if (argc != 4) {
         exitArgsErr();
     }
 
-    FILE *fp;
+    FILE *read_fp, *write_fp;
 
-    fp = fopen(argv[1], "r");
-    if (fp == NULL) {
+    read_fp = fopen(argv[1], "r");
+    if (read_fp == NULL) {
         exitInputErr();
     }
     
     memset(tables, -1, sizeof(tables));
-    fscanf(fp, "%d", &nodeNum);
+    fscanf(read_fp, "%d", &nodeNum);
     //네트워크 구성
     for (int idx = 0; idx < nodeNum; idx++) {
         int v, e, w;
-        fscanf(fp, "%d %d %d", &v, &e, &w);
+        fscanf(read_fp, "%d %d %d", &v, &e, &w);
         graph[v].push_back(pii(e, w));
         graph[e].push_back(pii(v, w));
         tables[v].next[e] = e;
@@ -87,18 +119,16 @@ int main(int argc, char* argv[]) {
 
     updateRoutingTables();
 
-    for (int idx = 0; idx < nodeNum; idx++) {
-        for (int j = 0; j < nodeNum; j++) {
-            printf("%d: %d %d\n", j, tables[idx].next[j], tables[idx].cost[j]);
-        }
-        printf("\n");
-    }
-    
-    fp = fopen(argv[2], "r");
-     if (fp == NULL) {
+    write_fp = fopen("output_dv.txt", "w");   
+    writeTableOutput(write_fp); 
+
+    read_fp = fopen(argv[2], "r");
+    if (read_fp == NULL) {
         exitInputErr();
     }
 
-    printf("Complete. Output file written to output_ls.txt.");
+    deliverMessages(read_fp, write_fp);
+
+    printf("Complete. Output file written to output_dv.txt.");
     return 0;
 }
