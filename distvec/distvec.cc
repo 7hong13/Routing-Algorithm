@@ -40,7 +40,7 @@ void updateRoutingTables() {
                 for (int u = 0; u < nodeNum; u++) {
                     if (node == u) continue;
                     if (u == neighbor) continue;
-                    if (tables[node].next[u] == -1) continue;
+                    if (tables[node].next[u] == -1) continue; //전달해줄 정보x
                     //기존에 연결되지 않음
                     if (tables[neighbor].next[u] < 0) {
                         tables[neighbor].next[u] = node;
@@ -53,6 +53,7 @@ void updateRoutingTables() {
                         tables[neighbor].cost[u] = tables[node].cost[u] + baseCost;
                         hasConverged = false;
                     }
+                    //경로의 next hop에 해당하는 node로부터의 정보는 무조건 수용
                     else if (tables[neighbor].next[u] == node && tables[neighbor].cost[u] != tables[node].cost[u] + baseCost) {
                         tables[neighbor].cost[u] = tables[node].cost[u] + baseCost;
                         hasConverged = false;
@@ -144,87 +145,9 @@ int main(int argc, char* argv[]) {
     int u, v, cost;
     fscanf(read_fp2, "%d %d %d", &u, &v, &cost);
     while (!feof(read_fp2)) {
-        /*
-        if (cost == -999) {
-            graph[v][u] = graph[u][v] = -1; 
-            for (int node = 0; node < nodeNum; node++) {
-                if (tables[u].next[node] == v) {
-                    tables[u].next[node] = tables[u].cost[node] = -1;
-                }
-                if (tables[v].next[node] == u) {
-                    tables[v].next[node] = tables[v].cost[node] = -1;
-                }
-            }  
-        }
-        else {
-            graph[v][u] = graph[u][v] = cost;   
-            for (int node = 0; node < nodeNum; node++) {
-                if (node == v && tables[u].next[node] == v) {
-                    tables[u].cost[node] = cost;
-                }
-                if (node == u && tables[v].next[node] == u) {
-                    tables[v].cost[node] = cost;
-                } 
-                if (tables[u].next[node] == v) {
-                    tables[u].cost[node] += cost;
-                }
-                if (tables[v].next[node] == u) {
-                    tables[v].cost[node] += cost;
-                }
-            }
-        }  
-
-        for (int neighbor = 0; neighbor < nodeNum; neighbor++) {
-            if (graph[u][neighbor] == -1) continue;
-            for (int node = 0; node < nodeNum; node++) {
-                if (node == u) continue;
-                if (node == neighbor) continue;
-                if (tables[neighbor].next[node] == u) {
-                    if (tables[u].cost[node] == -1) {
-                        tables[neighbor].next[node] = tables[neighbor].cost[node] = -1;
-                    }
-                    else {
-                        tables[neighbor].cost[node] = tables[u].cost[node] + graph[u][neighbor];
-                    }
-                }
-            }
-        }
-
-        for (int neighbor = 0; neighbor < nodeNum; neighbor++) {
-            if (graph[v][neighbor] == -1) continue;
-            for (int node = 0; node < nodeNum; node++) {
-                if (node == v) continue;
-                if (node == neighbor) continue;
-                if (tables[neighbor].next[node] == v) {
-                    printf("neigbor: %d, node: %d, next: %d, new val: %d\n", neighbor, node, tables[neighbor].next[node], tables[v].cost[node] + graph[v][neighbor]);
-                    if (tables[v].cost[node] == -1) {
-                        tables[neighbor].next[node] = tables[neighbor].cost[node] = -1;
-                    }
-                    else {
-                        tables[neighbor].cost[node] = tables[v].cost[node] + graph[v][neighbor];
-                    }
-                }
-            }
-        }*/
-        
-        /*for (int idx = 0; idx < nodeNum; idx++) {
-            for (int j = 0; j < nodeNum; j++) {
-                printf("dest: %d, dist: %d, next %d\n", j, tables[idx].cost[j], tables[idx].next[j]);
-            }
-            printf("\n");
-        }*/
-        
+        //routing table 새로 구성 위해 prev state로 초기화
         memcpy(&graph, &tmpGraph, sizeof(tmpGraph));
         memcpy(&tables, &tmpTables, sizeof(tmpTables));
-
-        printf("1st state\n");
-        for (int idx = 0; idx < nodeNum; idx++) {
-            for (int j = 0; j < nodeNum; j++) {
-                printf("dest: %d, dist: %d, next %d\n", j, tables[idx].cost[j], tables[idx].next[j]);
-            }
-            printf("\n");
-        }
-        printf("\n");
 
         if (cost == -999) {
             graph[v][u] = graph[u][v] = -1;
@@ -237,15 +160,6 @@ int main(int argc, char* argv[]) {
             tables[u].next[v] = v;
             tables[u].cost[v] = cost;
         }
-
-        printf("next state\n");
-        for (int idx = 0; idx < nodeNum; idx++) {
-            for (int j = 0; j < nodeNum; j++) {
-                printf("dest: %d, dist: %d, next %d\n", j, tables[idx].cost[j], tables[idx].next[j]);
-            }
-            printf("\n");
-        }
-        printf("\n");
 
         memcpy(&tmpGraph, &graph, sizeof(graph));
         memcpy(&tmpTables, &tables, sizeof(tables));
