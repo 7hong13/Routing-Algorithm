@@ -142,6 +142,9 @@ int main(int argc, char* argv[]) {
         fscanf(read_fp2, "%d %d %d", &u, &v, &cost);
     }
 
-    printf("Complete. Output file written to output_ls.txt.");
+    printf("Complete. Output file written to output_ls.txt.\n");
+    fclose(read_fp);
+    fclose(read_fp2);
+    fclose(write_fp);
     return 0;
 }
