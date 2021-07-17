@@ -38,9 +38,9 @@ void dijkstra(FILE *write_fp) {
                 int minCost = pq.top().first;
                 int x = pq.top().second;
                 pq.pop();
+                if (dist[u][x] < minCost) continue;
                 for (size_t idx = 0; idx < graph[x].size(); idx++) {
                     pii y = graph[x][idx];
-                    if (dist[u][y.first] < minCost) continue;
                     if (dist[u][y.first] <= dist[u][x] + y.second) continue;
                     dist[u][y.first] = dist[u][x] + y.second;
                     pq.push(pii(dist[u][y.first], y.first));
